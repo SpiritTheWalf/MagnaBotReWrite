@@ -4,6 +4,7 @@ import discord
 import sqlite3
 import datetime
 import sys
+import botsetup
 # Import other Cogs here
 
 from discord.ext import commands
@@ -23,7 +24,7 @@ c = conn.cursor()  # Sets the cursor
 
 # Load cogs function
 async def load_cogs(bot):
-    cogs = []  # Add cogs to be added here, once imported
+    cogs = [botsetup]  # Add cogs to be added here, once imported
     for cog in cogs:
         if not bot.get_cog(cog.__name__):
             try:
@@ -56,7 +57,7 @@ async def on_guild_join(guild):
     existing_guild = c.fetchone()
     if not existing_guild:
         # If guild is not in the database, add it
-        c.execute("INSERT INTO guilds (guild.id) VALUES (?)", (guild.id,))
+        c.execute("INSERT INTO guilds (guild_id) VALUES (?)", (guild.id,))
         conn.commit()
         print(f"Added {guild.name} to the database")
     else:
