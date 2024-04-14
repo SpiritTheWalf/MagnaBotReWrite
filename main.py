@@ -4,9 +4,7 @@ import discord
 import sqlite3
 import datetime
 import sys
-import botsetup
-import logging_cog
-import sheri
+import botsetup, logging_cog, sheri, moderation
 # Import other Cogs here
 
 from discord.ext import commands
@@ -26,7 +24,7 @@ c = conn.cursor()  # Sets the cursor
 
 # Load cogs function
 async def load_cogs(bot):
-    cogs = [botsetup, logging_cog, sheri]  # Add cogs to be added here, once imported
+    cogs = [botsetup, logging_cog, sheri, moderation]  # Add cogs to be added here, once imported
     for cog in cogs:
         if not bot.get_cog(cog.__name__):
             try:
