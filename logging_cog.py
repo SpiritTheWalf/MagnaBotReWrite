@@ -8,14 +8,15 @@ from datetime import datetime, timezone, timedelta
 DATABASE_FILE = "logging.db"
 
 
+def get_connection():
+    return sqlite3.connect(DATABASE_FILE)
+
+
 class LoggingCog(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
         self.conn = sqlite3.connect(DATABASE_FILE)
         self.cursor = self.conn.cursor()
-
-    def get_connection(self):
-        return sqlite3.connect(DATABASE_FILE)
 
     async def get_logging_channels(self, guild_id):  # Defines the function to load the logging channels
         query = ("SELECT message_logs, member_logs, voice_logs, mod_logs, muterole, muterole_channel FROM guilds WHERE "
@@ -86,17 +87,27 @@ class LoggingCog(commands.Cog):
             channel_id = result[0]
             channel = before.guild.get_channel(channel_id)
             if channel:
-                embed = discord.Embed(
-                    title="Message Edited",
-                    color=discord.Color.gold()
-                )
-                embed.add_field(name="Before", value=before.content, inline=False)
-                embed.add_field(name="After", value=after.content, inline=False)
-                embed.add_field(name="Author", value=before.author.mention, inline=False)
-                embed.add_field(name="Channel", value=before.channel.mention, inline=False)
-                embed.add_field(name="Timestamp", value=datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC"),
-                                inline=False)
-                await channel.send(embed=embed)
+                # Check if the message has content or attachments
+                if before.content or len(before.attachments) > 0:
+                    embed = discord.Embed(
+                        title="Message Edited",
+                        color=discord.Color.gold()
+                    )
+                    # Add fields for original and edited message content
+                    if before.content:
+                        embed.add_field(name="Before", value=before.content, inline=False)
+                    if after.content:
+                        embed.add_field(name="After", value=after.content, inline=False)
+                    # Check for attachments (images, gifs) and include them in the embed
+                    if before.attachments:
+                        attachment_urls = [attachment.url for attachment in before.attachments]
+                        embed.add_field(name="Attachments", value="\n".join(attachment_urls), inline=False)
+                    # Add other information to the embed
+                    embed.add_field(name="Author", value=before.author.mention, inline=False)
+                    embed.add_field(name="Channel", value=before.channel.mention, inline=False)
+                    embed.add_field(name="Timestamp", value=datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC"),
+                                    inline=False)
+                    await channel.send(embed=embed)
 
     @commands.Cog.listener()
     async def on_voice_state_update(self, member, before, after):
