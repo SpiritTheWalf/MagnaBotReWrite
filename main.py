@@ -20,6 +20,8 @@ COMMAND_PREFIX = "?"  # Sets the bots command prefix for non app commands
 bot = commands.Bot(command_prefix=COMMAND_PREFIX, intents=intents)  # Defines bot
 conn = sqlite3.connect("logging.db")  # Establishes a connection to the database
 c = conn.cursor()  # Sets the cursor
+logger = logging.getLogger(__name__)
+print(type(TOKEN))
 
 
 # Load cogs function
@@ -47,6 +49,7 @@ async def sync(ctx):
     await ctx.bot.tree.sync()
     await ctx.send("Commands synced, you will need to reload Discord to see them")
     await ctx.message.delete()
+    logger.info(msg="Spirit synced app commands")
 
 
 # Adds a guild to the logging database when a new one is joined, for logging purposes
@@ -59,9 +62,9 @@ async def on_guild_join(guild):
         # If guild is not in the database, add it
         c.execute("INSERT INTO guilds (guild_id) VALUES (?)", (guild.id,))
         conn.commit()
-        print(f"Added {guild.name} to the database")
+        logger.info(msg=f"Added {guild.name} to the database")
     else:
-        print(f"{guild.name} is already in the database")
+        logger.info(msg=f"{guild.name} is already in the database")
 
 
 # Sets up the logging config and file format
