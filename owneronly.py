@@ -131,6 +131,53 @@ class OwnerOnly(commands.Cog):
         await ctx.message.delete()
         logger.info(msg=f"Spirit ran command glist in {guild}")
 
+    @commands.command(name="ginfo", hidden=True)
+    @commands.check(is_owner)
+    async def ginfo(self, ctx, guild_id: int = None):
+        if guild_id is None:
+            guild_id = ctx.guild.id
+
+        guild = self.bot.get_guild(guild_id)
+        if guild is not None:
+            owner = guild.owner
+            total_members = guild.member_count
+            text_channels = len(guild.text_channels)
+            voice_channels = len(guild.voice_channels)
+            created_at = guild.created_at.strftime('%Y-%m-%d %H:%M:%S')
+            bot_member = guild.get_member(self.bot.user.id)
+            joined_at = bot_member.joined_at.strftime('%Y-%m-%d %H:%M:%S')
+
+            embed = discord.Embed(title=f"Guild information - {guild.name}", color=discord.Color.blue())
+            embed.add_field(name="Owner", value=f"{owner.name}", inline=False)
+            embed.add_field(name="Total Members", value=total_members, inline=False)
+            embed.add_field(name="Text Channels", value=text_channels, inline=False)
+            embed.add_field(name="Voice Channels", value=voice_channels, inline=False)
+            embed.add_field(name="Created At", value=created_at, inline=False)
+            embed.add_field(name="Bot Joined At", value=joined_at, inline=False)
+
+            await ctx.send(embed=embed)
+        else:
+            await ctx.send("Guild not found")
+
+        await ctx.message.delete()
+        logger.info(f"Spirit ran command ginfo in {guild.name}")
+
+    @commands.command(name="senddm", hidden=True)
+    @commands.has_permissions(kick_members=True, administrator=True)
+    async def senddm(self, ctx, user_id: int, *, message: str):
+        user = self.bot.get_user(user_id)
+        guild = ctx.guild
+        author = ctx.author
+        if user is not None:
+            try:
+                await user.send(f" - {message}\n\nSent by {author} from guild {guild}")
+                await ctx.send("Done")
+            except discord.HTTPException:
+                await ctx.send(f"Failed to send a message to {user.name}.")
+        else:
+            await ctx.send("User not found.")
+
+        logger.info(msg=f"{author} sent a message to {user} for reason {message} in guild {guild}")
 
 async def setup(bot):
     await bot.add_cog(OwnerOnly(bot))
