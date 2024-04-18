@@ -21,7 +21,6 @@ bot = commands.Bot(command_prefix=COMMAND_PREFIX, intents=intents)  # Defines bo
 conn = sqlite3.connect("logging.db")  # Establishes a connection to the database
 c = conn.cursor()  # Sets the cursor
 logger = logging.getLogger(__name__)
-print(type(TOKEN))
 
 
 # Load cogs function

@@ -2,6 +2,7 @@ import discord
 import sqlite3
 import datetime
 import asyncio
+import logging
 
 from discord.ext import commands
 from discord import app_commands
@@ -11,6 +12,7 @@ from discord import ui
 DATABASE_FILE = "logging.db"
 PUNISHMENT_DATABASE = "punishment_history.db"
 COMMAND_PREFIX = "?"
+logger = logging.getLogger(__name__)
 
 
 class PaginatorView(discord.ui.View):
@@ -94,6 +96,9 @@ class ModerationCog(commands.Cog):
 
     @app_commands.command(name="userhistory", description="Gets a user's punishment history")
     async def user_history(self, inter: discord.Interaction, user_id: str):
+        user = self.bot.get_user(int(user_id))
+        author = inter.user
+        guild = inter.guild
         try:
             user_id = int(user_id)
         except ValueError:
@@ -111,6 +116,8 @@ class ModerationCog(commands.Cog):
         if not history:
             await inter.response.send_message("No punishment history found for this user in this guild.")
             return
+
+        logger.info(msg=f"{author} ran command userhistory on user {user} in guild {guild}")
 
         pages = []
         # Generate pages of punishment history
@@ -221,6 +228,9 @@ class ModerationCog(commands.Cog):
         await self.add_punishment(guild.id, user.id, punisher_id, "warn", punishment_time, reason)
 
         await inter.response.send_message("User has been warned successfully.", ephemeral=True)
+        author = inter.user
+        guild = inter.guild
+        logger.info(msg=f"{author} warned {user} in {guild} for {reason}")
 
     @app_commands.command(name="kick", description="Kick a user from the server")
     async def kick_command(self, inter: discord.Interaction, user: discord.Member, reason: str = "No reason provided"):
@@ -280,9 +290,13 @@ class ModerationCog(commands.Cog):
             await inter.response.send_message(f"Failed to send embed to the default logging channel: {e}",
                                               ephemeral=True)
 
-    async def send_ban_embed(self, channel, user, issuer, reason):  # Defines the structure of the embed
+        author = inter.user
+        guild = inter.guild
+        logger.info(msg=f"{author} kicked {user} from {guild} for {reason}")
+
+    async def send_ban_embed(self, channel, member, issuer, reason):  # Defines the structure of the embed
         ban_embed = discord.Embed(title="User Banned", color=discord.Color.red())
-        ban_embed.set_thumbnail(url=user.avatar.url)
+        ban_embed.set_thumbnail(url=member.avatar.url)
         ban_embed.add_field(name="User", value=user.display_name, inline=False)
         ban_embed.add_field(name="Issuer", value=issuer.display_name, inline=False)
         ban_embed.add_field(name="Reason", value=reason, inline=False)
@@ -291,55 +305,26 @@ class ModerationCog(commands.Cog):
         await channel.send(embed=ban_embed)
 
     @app_commands.command(name="ban", description="Ban a user from the server")
-    async def ban_command(self, inter: discord.Interaction, user_id: str = None, username: str = None,
-                          reason: str = "No reason provided"):
+    async def ban_command(self, inter: discord.Interaction, member: discord.Member, reason: str = "No reason provided"):
         issuer = inter.user
         guild = inter.guild
-
-        # Check if the issuer has the "Ban Members" permission or is an administrator
-        if not issuer.guild_permissions.ban_members and not issuer.guild_permissions.administrator:
-            await inter.response.send_message("You don't have permission to use this command.")
-            return
-
-        # Ensure only one of user_id or username is provided
-        if (user_id is None and username is None) or (user_id is not None and username is not None):
-            await inter.response.send_message("Please provide either a user ID or a username, not both.")
-            return
-
-        # Convert user_id from string to integer if it's a numeric string
-        if user_id is not None and user_id.isdigit():
-            user_id = int(user_id)
-
-        # Fetch the member object using user ID or username
-        user = None
-        if user_id is not None:
-            try:
-                user = await self.bot.fetch_user(user_id)
-            except discord.NotFound:
-                await inter.response.send_message("User not found.")
-                return
-        elif username is not None:
-            user = discord.utils.get(guild.members, name=username)
-            if user is None:
-                await inter.response.send_message("User not found.")
-                return
 
         # Send DM to the user
         try:
             ban_dm_embed = discord.Embed(title="You have been banned from the server!", color=discord.Color.red())
-            ban_dm_embed.set_thumbnail(url=user.avatar.url)
+            ban_dm_embed.set_thumbnail(url=member.avatar.url)
             ban_dm_embed.add_field(name="Server", value=guild.name, inline=False)
             ban_dm_embed.add_field(name="Issuer", value=issuer.display_name, inline=False)  # Change to display_name
             ban_dm_embed.add_field(name="Reason", value=reason, inline=False)
             ban_dm_embed.add_field(name="Timestamp", value=datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC"),
                                    inline=False)
-            await user.send(embed=ban_dm_embed)
+            await member.send(embed=ban_dm_embed)
         except discord.Forbidden:
             await inter.response.send_message("Failed to send a DM to the user. Make sure they have DMs enabled.")
 
         # Ban the user
         try:
-            await guild.ban(user, reason=reason)
+            await guild.ban(member, reason=reason)
         except discord.Forbidden:
             await inter.response.send_message("I don't have permission to ban that user.")
             return
@@ -347,7 +332,7 @@ class ModerationCog(commands.Cog):
         # Add ban details to the database
         punisher_id = issuer.id
         ban_time = datetime.utcnow()
-        await self.add_punishment(guild.id, user.id, punisher_id, "ban", ban_time, reason)
+        await self.add_punishment(guild.id, member.id, punisher_id, "ban", ban_time, reason)
 
         # Get the default logging channel
         default_channel_id = await self.get_mod_logs_channel(guild.id)
@@ -362,9 +347,13 @@ class ModerationCog(commands.Cog):
             return
 
         # Send ban embed to default logging channel
-        await self.send_ban_embed(default_channel, user, issuer, reason)
+        await self.send_ban_embed(default_channel, member.mention, issuer, reason)
 
         await inter.response.send_message(f"{user.mention} has been banned from the server for: {reason}")
+
+        author = inter.user
+        guild = inter.guild
+        logger.info(msg=f"{author} banned {member} from {guild} for {reason}")
 
     async def send_unban_embed(self, channel, user, issuer):  # Defines the embed for the unban command
         unban_embed = discord.Embed(title="User Unbanned", color=discord.Color.green())
@@ -427,6 +416,10 @@ class ModerationCog(commands.Cog):
         await self.send_unban_embed(default_channel, user, issuer)
 
         await inter.response.send_message(f"{user.mention} has been unbanned from the server.")
+
+        author = inter.user
+        guild = inter.guild
+        logger.info(msg=f"{author} unbanned {user} from {guild} for {reason}")
 
     async def get_mute_role(self, guild_id):
         conn = sqlite3.connect(DATABASE_FILE)
@@ -496,6 +489,10 @@ class ModerationCog(commands.Cog):
         unban_time = datetime.utcnow()
         await self.add_punishment(guild.id, member.id, punisher_id, "mute", unban_time, reason)
 
+        author = inter.user
+        guild = inter.guild
+        logger.info(msg=f"{author} muted {user} from {guild} for {reason}")
+
     @app_commands.command(name="unmute", description="Unmutes a user.")
     @commands.has_permissions(moderate_members=True, administrator=True)
     async def mute(self, inter: discord.Interaction, member: discord.Member, reason: str = "No reason provided"):
@@ -554,6 +551,10 @@ class ModerationCog(commands.Cog):
         punisher_id = inter.user.id
         unban_time = datetime.utcnow()
         await self.add_punishment(guild.id, member.id, punisher_id, "unmute", unban_time, reason)
+
+        author = inter.user
+        guild = inter.guild
+        logger.info(msg=f"{author} unmuted {user} from {guild} for {reason}")
 
 
 async def setup(bot):
