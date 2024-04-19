@@ -4,11 +4,19 @@ import discord
 import sqlite3
 import datetime
 import sys
+import io
+import textwrap
+import traceback
+import aiohttp
+import os
+import inspect
+import asyncio
 import botsetup, logging_cog, sheri, moderation, owneronly
 # Import other Cogs here
 
 from discord.ext import commands
 from dotenv import load_dotenv
+from contextlib import redirect_stdout
 
 load_dotenv()  # Loads the .env file with the environment variables
 
@@ -21,6 +29,11 @@ bot = commands.Bot(command_prefix=COMMAND_PREFIX, intents=intents)  # Defines bo
 conn = sqlite3.connect("logging.db")  # Establishes a connection to the database
 c = conn.cursor()  # Sets the cursor
 logger = logging.getLogger(__name__)
+OWNER_IDS = [1174000666012823565, 1108126443638116382]
+last_result = None
+
+def is_owner(ctx):
+    return ctx.message.author.id in OWNER_IDS
 
 
 # Load cogs function
@@ -83,6 +96,70 @@ stderr_handler = logging.StreamHandler(sys.stderr)
 stderr_handler.setLevel(logging.ERROR)
 stderr_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
 logging.getLogger().addHandler(stderr_handler)
+
+def cleanup_code(content: str) -> str:
+    """Automatically removes code blocks from the code."""
+    # remove ```py\n```
+    if content.startswith('```') and content.endswith('```'):
+        return '\n'.join(content.split('\n')[1:-1])
+
+    # remove `foo`
+    return content.strip('` \n')
+
+@bot.command(hidden=True, name='eval')
+@commands.check(is_owner)
+async def eval(ctx, *, body: str):
+    """Evaluates a code"""
+
+    if "print(TOKEN" in body:
+        return await ctx.send("You wish")
+
+    env = {
+        'bot': bot,
+        'ctx': ctx,
+        'channel': ctx.channel,
+        'author': ctx.author,
+        'guild': ctx.guild,
+        'message': ctx.message,
+        '_': last_result,
+    }
+
+    env.update(globals())
+
+    body = cleanup_code(body)
+    stdout = io.StringIO()
+
+    to_compile = f'async def func():\n{textwrap.indent(body, "  ")}'
+
+    try:
+        exec(to_compile, env)
+    except Exception as e:
+        return await ctx.send(f'```py\n{e.__class__.__name__}: {e}\n```')
+
+    func = env['func']
+    try:
+        with redirect_stdout(stdout):
+            ret = await func()
+    except Exception as e:
+        value = stdout.getvalue()
+        await ctx.send(f'```py\n{value}{traceback.format_exc()}\n```')
+    else:
+        value = stdout.getvalue()
+        try:
+            await ctx.message.add_reaction('\u2705')
+        except:
+            pass
+
+        if ret is None:
+            if value:
+                await ctx.send(f'```py\n{value}\n```')
+        else:
+            await ctx.send(f'```py\n{value}{ret}\n```')
+
+@eval.error
+async def eval_error(ctx, error):
+    if isinstance(error, commands.CheckFailure):
+        await ctx.send("Nice try")
 
 
 # Setup hook
