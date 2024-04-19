@@ -1,6 +1,8 @@
 import discord
 import sqlite3
 import logging
+import os
+import sys
 
 from discord.ext import commands, tasks
 
@@ -23,7 +25,8 @@ class OwnerOnly(commands.Cog):
         self.refresh_status.start()
 
     async def get_logging_channels(self, guild_id):  # Defines the function to load the logging channels
-        query = "SELECT message_logs, member_logs, voice_logs, mod_logs, muterole, muterole_channel FROM guilds WHERE""guild_id = ?"
+        query = ("SELECT message_logs, member_logs, voice_logs, mod_logs, muterole, muterole_channel FROM guilds WHERE "
+                 "guild_id = ?")
         self.cursor.execute(query, (guild_id,))
         result = self.cursor.fetchone()
         if result:
@@ -178,6 +181,18 @@ class OwnerOnly(commands.Cog):
             await ctx.send("User not found.")
 
         logger.info(msg=f"{author} sent a message to {user} for reason {message} in guild {guild}")
+
+
+
+    @commands.command(name='restart', hidden=True)
+    @commands.check(is_owner)
+    async def restart(self, ctx):
+        await ctx.send('Restarting...')
+        await self.bot.http.close()
+        await self.bot.close()
+        # Restart the bot process
+        os.execv(sys.executable, ['python'] + sys.argv)
+
 
 async def setup(bot):
     await bot.add_cog(OwnerOnly(bot))
