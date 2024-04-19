@@ -32,6 +32,7 @@ logger = logging.getLogger(__name__)
 OWNER_IDS = [1174000666012823565, 1108126443638116382]
 last_result = None
 
+
 def is_owner(ctx):
     return ctx.message.author.id in OWNER_IDS
 
@@ -97,6 +98,7 @@ stderr_handler.setLevel(logging.ERROR)
 stderr_handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
 logging.getLogger().addHandler(stderr_handler)
 
+
 def cleanup_code(content: str) -> str:
     """Automatically removes code blocks from the code."""
     # remove ```py\n```
@@ -105,6 +107,7 @@ def cleanup_code(content: str) -> str:
 
     # remove `foo`
     return content.strip('` \n')
+
 
 @bot.command(hidden=True, name='eval')
 @commands.check(is_owner)
@@ -155,6 +158,7 @@ async def eval(ctx, *, body: str):
                 await ctx.send(f'```py\n{value}\n```')
         else:
             await ctx.send(f'```py\n{value}{ret}\n```')
+
 
 @eval.error
 async def eval_error(ctx, error):

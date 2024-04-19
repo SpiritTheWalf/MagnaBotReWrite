@@ -347,9 +347,9 @@ class ModerationCog(commands.Cog):
             return
 
         # Send ban embed to default logging channel
-        await self.send_ban_embed(default_channel, member.mention, issuer, reason)
+        await self.send_ban_embed(default_channel, member, issuer, reason)
 
-        await inter.response.send_message(f"{user.mention} has been banned from the server for: {reason}")
+        await inter.response.send_message(f"{member.mention} has been banned from the server for: {reason}")
 
         author = inter.user
         guild = inter.guild
