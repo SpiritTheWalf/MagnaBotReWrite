@@ -11,7 +11,7 @@ import aiohttp
 import os
 import inspect
 import asyncio
-import botsetup, logging_cog, sheri, moderation, owneronly, slashcommands
+import botsetup, logging_cog, sheri, moderation, owneronly, slashcommands, gay
 # Import other Cogs here
 
 from discord.ext import commands
@@ -39,7 +39,7 @@ def is_owner(ctx):
 
 # Load cogs function
 async def load_cogs(bot):
-    cogs = [botsetup, logging_cog, sheri, moderation, owneronly, slashcommands]  # Add cogs to be added here, once imported
+    cogs = [botsetup, logging_cog, sheri, moderation, owneronly, slashcommands, gay]  # Add cogs to be added here, once imported
     for cog in cogs:
         if not bot.get_cog(cog.__name__):
             try:
