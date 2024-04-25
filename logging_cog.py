@@ -98,10 +98,6 @@ class LoggingCog(commands.Cog):
                         embed.add_field(name="Before", value=before.content, inline=False)
                     if after.content:
                         embed.add_field(name="After", value=after.content, inline=False)
-                    # Check for attachments (images, gifs) and include them in the embed
-                    if before.attachments:
-                        attachment_urls = [attachment.url for attachment in before.attachments]
-                        embed.add_field(name="Attachments", value="\n".join(attachment_urls), inline=False)
                     # Add other information to the embed
                     embed.add_field(name="Author", value=before.author.mention, inline=False)
                     embed.add_field(name="Channel", value=before.channel.mention, inline=False)
