@@ -33,11 +33,11 @@ class OwnerOnly(commands.Cog):
             return result
 
     async def messagelogs(self, guild_id):  # Defines the function to load the logging channels
-        query = "SELECT message_logs, member_logs, voice_logs, mod_logs, muterole, muterole_channel FROM guilds WHERE""guild_id = ?"
+        query = "SELECT message_logs FROM guilds WHERE guild_id = ?"
         self.cursor.execute(query, (guild_id,))
         result = self.cursor.fetchone()
         if result:
-            return result
+            return result[0]
 
     @commands.command()
     @commands.is_owner()
@@ -63,7 +63,8 @@ class OwnerOnly(commands.Cog):
             await ctx.send("Please provide a message to send")
             return
         for guild in self.bot.guilds:
-            logging_channel_id = self.messagelogs(guild.id)
+            logging_channel_id = await self.messagelogs(guild.id)
+            print(logging_channel_id)
             if logging_channel_id:
                 logging_channel = guild.get_channel(logging_channel_id)
                 if logging_channel:
@@ -181,8 +182,6 @@ class OwnerOnly(commands.Cog):
             await ctx.send("User not found.")
 
         logger.info(msg=f"{author} sent a message to {user} for reason {message} in guild {guild}")
-
-
 
     @commands.command(name='restart', hidden=True)
     @commands.check(is_owner)
