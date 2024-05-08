@@ -5,9 +5,10 @@ import asyncio
 import logging
 
 from discord.ext import commands
-from discord import app_commands
+from discord import app_commands, ui
+from discord.app_commands import Group, command
+from discord.ext.commands import GroupCog
 from datetime import datetime
-from discord import ui
 
 DATABASE_FILE = "logging.db"
 PUNISHMENT_DATABASE = "punishment_history.db"
@@ -70,18 +71,17 @@ class PaginatorView(discord.ui.View):
             await self.show_page(interaction)
 
 
-class ModerationCog(commands.Cog):
-    def __init__(self, bot: commands.Bot):
+class Moderation(GroupCog, group_name="mod", group_description="Moderation related commands"):
+    def __init__(self, bot):
         self.bot = bot
-        self.conn = sqlite3.connect(PUNISHMENT_DATABASE)
+        self.conn = sqlite3.connect(DATABASE_FILE)
         self.cursor = self.conn.cursor()
 
     def get_punishment_history(self, guild_id, user_id):
         conn = sqlite3.connect(PUNISHMENT_DATABASE)
         c = conn.cursor()
-        c.execute("SELECT punishment_type, punishment_time, reason, punisher_id FROM punishments WHERE guild_id=? AND "
-                  "user_id=?",
-                  (guild_id, user_id))
+        c.execute("SELECT punishment_type, punishment_time, reason, punisher_id FROM punishments WHERE guild_id = ? "
+                  "AND user_id = ?", (guild_id, user_id,))
         punishment_history = c.fetchall()
         conn.close()
         return punishment_history
@@ -90,12 +90,11 @@ class ModerationCog(commands.Cog):
         view = PaginatorView(pages, inter.channel, self.bot, user_id)
         await view.show_page(inter)
 
-        # Set the original response if inter is None
         if inter is None:
             self.original_response = view.original_response
 
-    @app_commands.command(name="userhistory", description="Gets a user's punishment history")
-    async def user_history(self, inter: discord.Interaction, user_id: str):
+    @command(name="userhistory", description="Gets a user's punishment history")  #
+    async def userhistory(self, inter: discord.Interaction, user_id: str):
         user = self.bot.get_user(int(user_id))
         author = inter.user
         guild = inter.guild
@@ -104,20 +103,17 @@ class ModerationCog(commands.Cog):
         except ValueError:
             await inter.response.send_message("Please provide a valid user ID.")
             return
-
         guild_id = inter.guild.id
         try:
             history = self.get_punishment_history(guild_id, user_id)
         except Exception as e:
-            print(f"Error fetching punishment history: {e}")
-            await inter.response.send_message("An error occurred while fetching punishment history.")
+            print(f"An error occurred while fetching punishment history:{e}.")
+            await inter.response.send_message(f"An error occurred while fetching punishment history: {e}.")
             return
-
         if not history:
-            await inter.response.send_message("No punishment history found for this user in this guild.")
+            await inter.response.send_message("No punishment history found for that user in this guild.")
             return
-
-        logger.info(msg=f"{author} ran command userhistory on user {user} in guild {guild}")
+        logger.info(msg=f"{author} ran command userhistory on {user} in {guild.name}.")
 
         pages = []
         # Generate pages of punishment history
@@ -129,7 +125,6 @@ class ModerationCog(commands.Cog):
                          f"**Moderator:** {punishment[3]}\n\n")
             pages.append(page)
 
-        # Pass user_id to show_initial_page
         await self.show_initial_page(inter, pages, user_id)
 
     async def get_mod_logs_channel(self, guild_id):
@@ -175,7 +170,7 @@ class ModerationCog(commands.Cog):
 
         await channel.send(embed=embed)
 
-    @app_commands.command(name="warn", description="Warn a user for violating rules")
+    @command(name="warn", description="Warn a user for violating rules")
     async def warn_command(self, inter: discord.Interaction, user: discord.Member, reason: str):
         guild = inter.guild
         if not guild:
@@ -232,7 +227,7 @@ class ModerationCog(commands.Cog):
         guild = inter.guild
         logger.info(msg=f"{author} warned {user} in {guild} for {reason}")
 
-    @app_commands.command(name="kick", description="Kick a user from the server")
+    @command(name="kick", description="Kick a user from the server")
     async def kick_command(self, inter: discord.Interaction, user: discord.Member, reason: str = "No reason provided"):
         guild = inter.guild
         issuer = inter.user
@@ -304,7 +299,7 @@ class ModerationCog(commands.Cog):
                             inline=False)
         await channel.send(embed=ban_embed)
 
-    @app_commands.command(name="ban", description="Ban a user from the server")
+    @command(name="ban", description="Ban a user from the server")
     async def ban_command(self, inter: discord.Interaction, member: discord.Member, reason: str = "No reason provided"):
         issuer = inter.user
         guild = inter.guild
@@ -364,7 +359,7 @@ class ModerationCog(commands.Cog):
                               inline=False)
         await channel.send(embed=unban_embed)
 
-    @app_commands.command(name="unban", description="Unban a user from the server")
+    @command(name="unban", description="Unban a user from the server")
     async def unban_command(self, inter: discord.Interaction, user_id: str, reason: str = "No reason provided"):
         issuer = inter.user
         guild = inter.guild
@@ -430,7 +425,7 @@ class ModerationCog(commands.Cog):
         conn.close()  # Close the connection after usage
         return result[0] if result else None
 
-    @app_commands.command(name="mute", description="Give the muted role to a specified user.")
+    @command(name="mute", description="Give the muted role to a specified user.")
     @commands.has_permissions(moderate_members=True, administrator=True)
     async def mute(self, inter: discord.Interaction, member: discord.Member, reason: str = "No reason provided"):
         guild = inter.guild
@@ -493,7 +488,7 @@ class ModerationCog(commands.Cog):
         guild = inter.guild
         logger.info(msg=f"{author} muted {user} from {guild} for {reason}")
 
-    @app_commands.command(name="unmute", description="Unmutes a user.")
+    @command(name="unmute", description="Unmutes a user.")
     @commands.has_permissions(moderate_members=True, administrator=True)
     async def mute(self, inter: discord.Interaction, member: discord.Member, reason: str = "No reason provided"):
         guild = inter.guild
@@ -558,4 +553,4 @@ class ModerationCog(commands.Cog):
 
 
 async def setup(bot):
-    await bot.add_cog(ModerationCog(bot))
+    await bot.add_cog(Moderation(bot))
