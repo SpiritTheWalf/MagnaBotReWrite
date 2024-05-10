@@ -214,6 +214,7 @@ class OwnerOnly(commands.Cog):
     async def cutie(self, ctx):
         lycos = self.bot.get_user(int(952344652604903435))
         await ctx.send(f"{lycos.mention} is a cutie!")
+        await ctx.message.delete()
 
 
 async def setup(bot):
