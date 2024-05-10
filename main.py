@@ -30,6 +30,7 @@ conn = sqlite3.connect("logging.db")  # Establishes a connection to the database
 c = conn.cursor()  # Sets the cursor
 logger = logging.getLogger(__name__)
 OWNER_IDS = [1174000666012823565, 1108126443638116382]
+DEV_IDS = [952344652604903435, 1174000666012823565]
 last_result = None
 
 
@@ -37,9 +38,14 @@ def is_owner(ctx):
     return ctx.message.author.id in OWNER_IDS
 
 
+def is_dev(ctx):
+    return ctx.message.author.id in DEV_IDS
+
+
 # Load cogs function
 async def load_cogs(bot):
-    cogs = [botsetup, logging_cog, sheri, moderation, owneronly, slashcommands, gay, info]  # Add cogs to be added here, once imported
+    cogs = [botsetup, logging_cog, sheri, moderation, owneronly, slashcommands, gay,
+            info]  # Add cogs to be added here, once imported
     for cog in cogs:
         if not bot.get_cog(cog.__name__):
             try:

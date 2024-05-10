@@ -5,6 +5,7 @@ import os
 import sys
 
 from discord.ext import commands, tasks
+from main import is_dev
 
 DATABASE_FILE = "logging.db"
 COMMAND_PREFIX = "?"
@@ -47,6 +48,7 @@ class OwnerOnly(commands.Cog):
 
     @commands.command(name="say", hidden=True)
     @commands.check(is_owner)
+    @commands.check(is_dev)
     async def say(self, ctx, *, message: str = None):
         guild = ctx.guild.name
         if message is None:
@@ -69,7 +71,6 @@ class OwnerOnly(commands.Cog):
                 logging_channel = guild.get_channel(logging_channel_id)
                 if logging_channel:
                     await logging_channel.send(message)
-                    await ctx.message.delete()
                     logger.info(msg=f"Spirit sent {message} in all guilds")
 
     @commands.command(name="dotstatus", hidden=True)
@@ -191,6 +192,22 @@ class OwnerOnly(commands.Cog):
         await self.bot.close()
         # Restart the bot process
         os.execv(sys.executable, ['python'] + sys.argv)
+
+    @commands.command(name="reload", hidden=True)
+    @commands.check(is_owner)
+    async def reload(self, ctx, cog_name: str):
+        if f'cogs.{cog_name}' in self.bot.extensions:
+            try:
+                self.bot.reload_extension(f'cogs.{cog_name}')
+                await ctx.send(f'{cog_name} reloaded successfully.')
+            except commands.ExtensionError as e:
+                await ctx.send(f'Failed to reload {cog_name}: {e}')
+        else:
+            try:
+                self.bot.load_extension(f'cogs.{cog_name}')
+                await ctx.send(f'{cog_name} loaded successfully.')
+            except commands.ExtensionError as e:
+                await ctx.send(f'Failed to load {cog_name}: {e}')
 
 
 async def setup(bot):
