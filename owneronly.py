@@ -209,6 +209,12 @@ class OwnerOnly(commands.Cog):
             except commands.ExtensionError as e:
                 await ctx.send(f'Failed to load {cog_name}: {e}')
 
+    @commands.command(name="cutie", hidden=True)
+    @commands.check(is_owner)
+    async def cutie(self, ctx):
+        lycos = self.bot.get_user(int(952344652604903435))
+        await ctx.send(f"{lycos.mention} is a cutie!")
+
 
 async def setup(bot):
     await bot.add_cog(OwnerOnly(bot))
