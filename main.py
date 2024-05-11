@@ -11,12 +11,13 @@ import aiohttp
 import os
 import inspect
 import asyncio
-import botsetup, logging_cog, sheri, moderation, owneronly, slashcommands, gay, info
+import botsetup, logging_cog, sheri, moderation, owneronly, slashcommands, gay, info, economy
 # Import other Cogs here
 
 from discord.ext import commands
 from dotenv import load_dotenv
 from contextlib import redirect_stdout
+from checks import is_owner, is_dev
 
 load_dotenv()  # Loads the .env file with the environment variables
 
@@ -29,23 +30,14 @@ bot = commands.Bot(command_prefix=COMMAND_PREFIX, intents=intents)  # Defines bo
 conn = sqlite3.connect("logging.db")  # Establishes a connection to the database
 c = conn.cursor()  # Sets the cursor
 logger = logging.getLogger(__name__)
-OWNER_IDS = [1174000666012823565, 1108126443638116382]
-DEV_IDS = [952344652604903435, 1174000666012823565]
 last_result = None
 
-
-def is_owner(ctx):
-    return ctx.message.author.id in OWNER_IDS
-
-
-def is_dev(ctx):
-    return ctx.message.author.id in DEV_IDS
 
 
 # Load cogs function
 async def load_cogs(bot):
     cogs = [botsetup, logging_cog, sheri, moderation, owneronly, slashcommands, gay,
-            info]  # Add cogs to be added here, once imported
+            info, economy]  # Add cogs to be added here, once imported
     for cog in cogs:
         if not bot.get_cog(cog.__name__):
             try:

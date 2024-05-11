@@ -5,16 +5,11 @@ import os
 import sys
 
 from discord.ext import commands, tasks
-from main import is_dev
+from checks import is_dev, is_owner
 
 DATABASE_FILE = "logging.db"
 COMMAND_PREFIX = "?"
-OWNER_IDS = [1174000666012823565, 1108126443638116382]
 logger = logging.getLogger(__name__)
-
-
-def is_owner(ctx):
-    return ctx.author.id in OWNER_IDS
 
 
 class OwnerOnly(commands.Cog):

@@ -352,6 +352,7 @@ class Moderation(GroupCog, group_name="mod", group_description="Moderation relat
 
     async def send_unban_embed(self, channel, user, issuer):  # Defines the embed for the unban command
         unban_embed = discord.Embed(title="User Unbanned", color=discord.Color.green())
+        unban_embed = discord.Embed(title="User Unbanned", color=discord.Color.green())
         unban_embed.set_thumbnail(url=user.avatar.url)
         unban_embed.add_field(name="User", value=user.display_name, inline=False)
         unban_embed.add_field(name="Issuer", value=issuer.display_name, inline=False)
@@ -486,11 +487,11 @@ class Moderation(GroupCog, group_name="mod", group_description="Moderation relat
 
         author = inter.user
         guild = inter.guild
-        logger.info(msg=f"{author} muted {user} from {guild} for {reason}")
+        logger.info(msg=f"{author} muted {member} from {guild} for {reason}")
 
     @command(name="unmute", description="Unmutes a user.")
     @commands.has_permissions(moderate_members=True, administrator=True)
-    async def mute(self, inter: discord.Interaction, member: discord.Member, reason: str = "No reason provided"):
+    async def unmute(self, inter: discord.Interaction, member: discord.Member, reason: str = "No reason provided"):
         guild = inter.guild
 
         role_id = await self.get_mute_role(guild.id)
@@ -506,7 +507,7 @@ class Moderation(GroupCog, group_name="mod", group_description="Moderation relat
             return
 
         await member.remove_roles(muted_role)
-        await inter.response.send_message(f"{member.mention} has been ummuted.")
+        await inter.response.send_message(f"{member.mention} has been unmuted.")
 
         avatar_url = member.avatar.url if member.avatar else member.default_avatar.url
 
@@ -549,7 +550,7 @@ class Moderation(GroupCog, group_name="mod", group_description="Moderation relat
 
         author = inter.user
         guild = inter.guild
-        logger.info(msg=f"{author} unmuted {user} from {guild} for {reason}")
+        logger.info(msg=f"{author} unmuted {member} from {guild} for {reason}")
 
 
 async def setup(bot):
