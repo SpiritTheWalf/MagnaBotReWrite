@@ -79,32 +79,41 @@ class LoggingCog(commands.Cog):
     async def on_message_edit(self, before, after):
         if before.author.bot:
             return
+
+        # Only proceed if the text content of the message has changed
+        if before.content == after.content:
+            return
+
         guild_id = before.guild.id
         query = "SELECT message_logs FROM guilds WHERE guild_id = ?"
-        self.cursor.execute(query, (guild_id,))
-        result = self.cursor.fetchone()
+
+        try:
+            self.cursor.execute(query, (guild_id,))
+            result = self.cursor.fetchone()
+        except Exception as e:
+            print(f"Database error: {e}")
+            return
+
         if result:
             channel_id = result[0]
             channel = before.guild.get_channel(channel_id)
-            if channel:
-                # Check if the message has content or attachments
-                if before.content or len(before.attachments) > 0:
-                    embed = discord.Embed(
-                        title="Message Edited",
-                        color=discord.Color.gold()
-                    )
-                    # Add fields for original and edited message content
-                    if before.content:
-                        embed.add_field(name="Before", value=before.content, inline=False)
-                    if after.content:
-                        embed.add_field(name="After", value=after.content, inline=False)
-                    # Add other information to the embed
-                    embed.add_field(name="Author", value=before.author.mention, inline=False)
-                    embed.add_field(name="Channel", value=before.channel.mention, inline=False)
-                    embed.add_field(name="Timestamp", value=datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC"),
-                                    inline=False)
-                    await channel.send(embed=embed)
 
+            if channel:
+                embed = discord.Embed(
+                    title="Message Edited",
+                    color=discord.Color.gold()
+                )
+
+                embed.add_field(name="Before", value=before.content or "[No Text Content]", inline=False)
+                embed.add_field(name="After", value=after.content or "[No Text Content]", inline=False)
+                embed.add_field(name="Author", value=before.author.mention, inline=False)
+                embed.add_field(name="Channel", value=before.channel.mention, inline=False)
+                embed.add_field(name="Timestamp", value=datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC"), inline=False)
+
+                try:
+                    await channel.send(embed=embed)
+                except Exception as e:
+                    print(f"Failed to send message in channel {channel_id}: {e}")
     @commands.Cog.listener()
     async def on_voice_state_update(self, member, before, after):
         guild_id = member.guild.id
