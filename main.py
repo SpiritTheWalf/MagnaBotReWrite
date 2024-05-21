@@ -8,10 +8,9 @@ import io
 import textwrap
 import traceback
 import aiohttp
-import os
 import inspect
 import asyncio
-import botsetup, logging_cog, sheri, moderation, owneronly, slashcommands, gay, info, economy
+import botsetup, logging_cog, sheri, moderation, owneronly, slashcommands, gay, info, economy, grab
 # Import other Cogs here
 
 from discord.ext import commands
@@ -33,11 +32,10 @@ logger = logging.getLogger(__name__)
 last_result = None
 
 
-
 # Load cogs function
 async def load_cogs(bot):
     cogs = [botsetup, logging_cog, sheri, moderation, owneronly, slashcommands, gay,
-            info, economy]  # Add cogs to be added here, once imported
+            info, grab, economy]  # Add cogs to be added here, once imported
     for cog in cogs:
         if not bot.get_cog(cog.__name__):
             try:
@@ -112,7 +110,7 @@ def cleanup_code(content: str) -> str:
 async def eval(ctx, *, body: str):
     """Evaluates a code"""
 
-    if "print(TOKEN" in body:
+    if "print(TOKEN)" in body:
         return await ctx.send("You wish")
 
     env = {
@@ -161,7 +159,8 @@ async def eval(ctx, *, body: str):
 @eval.error
 async def eval_error(ctx, error):
     if isinstance(error, commands.CheckFailure):
-        await ctx.send("Nice try")
+        spirit = bot.get_user(1174000666012823565)
+        await ctx.send(f"You do not have permission to run this command, {spirit.mention}")
 
 
 # Setup hook
