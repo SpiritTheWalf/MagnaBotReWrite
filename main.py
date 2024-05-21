@@ -10,7 +10,7 @@ import traceback
 import aiohttp
 import inspect
 import asyncio
-import botsetup, logging_cog, sheri, moderation, owneronly, slashcommands, gay, info, economy, grab
+import botsetup, logging_cog, sheri, moderation, owneronly, utility, gay, info, economy, grab
 # Import other Cogs here
 
 from discord.ext import commands
@@ -21,6 +21,7 @@ from checks import is_owner, is_dev
 load_dotenv()  # Loads the .env file with the environment variables
 
 intents = discord.Intents.default()  # Sets the default bot intents
+intents.guilds=True
 intents.members = True  # Allows the bot to see members in a guild
 intents.message_content = True  # Allows the bot to see message content
 TOKEN = os.getenv("BOT_TOKEN")  # Sets the bot's token
@@ -30,11 +31,13 @@ conn = sqlite3.connect("logging.db")  # Establishes a connection to the database
 c = conn.cursor()  # Sets the cursor
 logger = logging.getLogger(__name__)
 last_result = None
+home = int(os.getenv("HOME_ID"))
+join_channel = 1242595310069481492
 
 
 # Load cogs function
 async def load_cogs(bot):
-    cogs = [botsetup, logging_cog, sheri, moderation, owneronly, slashcommands, gay,
+    cogs = [botsetup, logging_cog, sheri, moderation, owneronly, utility, gay,
             info, grab, economy]  # Add cogs to be added here, once imported
     for cog in cogs:
         if not bot.get_cog(cog.__name__):
@@ -49,6 +52,11 @@ async def load_cogs(bot):
 async def on_ready():
     print(f"Logged in as {bot.user.name}")
     print("Ready!")
+    your_server = bot.get_guild(int(home))
+    if your_server:
+        print(f'Found server with ID {home}')
+    else:
+        print(f'Server with ID {home} not found')
 
 
 # Sync command to reload the app commands
@@ -61,7 +69,6 @@ async def sync(ctx):
     logger.info(msg="Spirit synced app commands")
 
 
-# Adds a guild to the logging database when a new one is joined, for logging purposes
 @bot.event
 async def on_guild_join(guild):
     # Check if guild already exists in the database
@@ -74,6 +81,36 @@ async def on_guild_join(guild):
         logger.info(msg=f"Added {guild.name} to the database")
     else:
         logger.info(msg=f"{guild.name} is already in the database")
+
+    # Create an invite link for the new guild
+    try:
+        invite = await guild.text_channels[0].create_invite(max_age=0, max_uses=0)
+        print(f'Invite link: {invite.url}')
+    except Exception as e:
+        print(f"Failed to create invite link: {e}")
+        return
+
+    # Wait for a short time to ensure the bot has loaded all its guild data
+    await asyncio.sleep(5)
+
+    try:
+        your_server = await bot.fetch_guild(home)
+        if your_server:
+            print(f'Found server with ID {home}')
+            channel = await your_server.fetch_channel(join_channel)
+            if channel:
+                try:
+                    await channel.send(
+                        f'Bot has joined a new guild: {guild.name} (ID: {guild.id})\nInvite link: <{invite.url}>')
+                    print(f'Message sent to channel ID {home} in server ID {join_channel}')
+                except Exception as e:
+                    print(f"Failed to send message: {e}")
+            else:
+                print(f'Channel with ID {join_channel} not found in server {home}')
+        else:
+            print(f'Server with ID {home} not found')
+    except Exception as e:
+        print(f"Error in on_ready: {e}")
 
 
 # Sets up the logging config and file format
