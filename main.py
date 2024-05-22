@@ -10,7 +10,7 @@ import traceback
 import aiohttp
 import inspect
 import asyncio
-import botsetup, logging_cog, sheri, moderation, owneronly, utility, gay, info, economy, grab
+import botsetup, logging_cog, sheri, moderation, owneronly, utility, gay, info, economy, grab, useful, tags
 # Import other Cogs here
 
 from discord.ext import commands
@@ -21,7 +21,7 @@ from checks import is_owner, is_dev
 load_dotenv()  # Loads the .env file with the environment variables
 
 intents = discord.Intents.default()  # Sets the default bot intents
-intents.guilds=True
+intents.guilds = True
 intents.members = True  # Allows the bot to see members in a guild
 intents.message_content = True  # Allows the bot to see message content
 TOKEN = os.getenv("BOT_TOKEN")  # Sets the bot's token
@@ -38,7 +38,7 @@ join_channel = 1242595310069481492
 # Load cogs function
 async def load_cogs(bot):
     cogs = [botsetup, logging_cog, sheri, moderation, owneronly, utility, gay,
-            info, grab, economy]  # Add cogs to be added here, once imported
+            info, grab, economy, useful, tags]  # Add cogs to be added here, once imported
     for cog in cogs:
         if not bot.get_cog(cog.__name__):
             try:
@@ -52,11 +52,6 @@ async def load_cogs(bot):
 async def on_ready():
     print(f"Logged in as {bot.user.name}")
     print("Ready!")
-    your_server = bot.get_guild(int(home))
-    if your_server:
-        print(f'Found server with ID {home}')
-    else:
-        print(f'Server with ID {home} not found')
 
 
 # Sync command to reload the app commands
