@@ -52,7 +52,7 @@ class LoggingCog(commands.Cog):
                                 inline=False)
             if reason:
                 embed.add_field(name="Reason", value=reason.capitalize(), inline=False)
-            await channel.send(embed=embed)
+                await channel.send(embed=embed)
 
     @commands.Cog.listener()
     async def on_member_join(self, member):
