@@ -5,6 +5,7 @@ from discord.ext import commands
 from discord import app_commands
 from discord.app_commands import Group, command
 from discord.ext.commands import GroupCog
+from version import VERSION
 
 DATABASE_FILE = "logging.db"
 COMMAND_PREFIX = "?"
@@ -104,6 +105,10 @@ class Info(GroupCog, group_name="info", group_description="Information commands 
     async def ping(self, inter: discord.Interaction):
         latency = round(self.bot.latency * 1000)
         await inter.response.send_message(f"Pong! My latency is {latency}ms.", ephemeral=True)
+
+    @command(name="version", description="Prints the version of the bot")
+    async def version(self, inter: discord.Interaction):
+        await inter.response.send_message(f"The current version of MagnaBot is {VERSION}")
 
 
 async def setup(bot):

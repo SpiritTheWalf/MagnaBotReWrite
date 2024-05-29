@@ -10,7 +10,7 @@ import traceback
 import aiohttp
 import inspect
 import asyncio
-import botsetup, logging_cog, sheri, moderation, owneronly, utility, gay, info, economy, grab, useful, tags
+import botsetup, logging_cog, sheri, moderation, owneronly, utility, gay, info, economy, grab, useful, tags, tickets
 # Import other Cogs here
 
 from discord.ext import commands
@@ -35,10 +35,11 @@ home = int(os.getenv("HOME_ID"))
 join_channel = 1242595310069481492
 
 
+
 # Load cogs function
 async def load_cogs(bot):
     cogs = [botsetup, logging_cog, sheri, moderation, owneronly, utility, gay,
-            info, grab, economy, useful, tags]  # Add cogs to be added here, once imported
+            info, grab, economy, useful, tags, tickets]  # Add cogs to be added here, once imported
     for cog in cogs:
         if not bot.get_cog(cog.__name__):
             try:
@@ -137,6 +138,7 @@ def cleanup_code(content: str) -> str:
     return content.strip('` \n')
 
 
+
 @bot.command(hidden=True, name='eval')
 @commands.check(is_owner)
 async def eval(ctx, *, body: str):
@@ -171,6 +173,15 @@ async def eval(ctx, *, body: str):
     try:
         with redirect_stdout(stdout):
             ret = await func()
+    except discord.Forbidden:
+        await ctx.send('I do not have permission to perform this action.')
+    except discord.HTTPException as http_ex:
+        await ctx.send(f'HTTPException: {http_ex}')
+    except discord.InvalidArgument as inv_arg:
+        await ctx.send(f'InvalidArgument: {inv_arg}')
+    except IndexError as e:
+        value = stdout.getvalue()
+        await ctx.send(f'```py\n{value}IndexError: list index out of range\n{traceback.format_exc()}\n```')
     except Exception as e:
         value = stdout.getvalue()
         await ctx.send(f'```py\n{value}{traceback.format_exc()}\n```')
@@ -201,6 +212,14 @@ async def on_connect():
     print("Bot is starting")
     await load_cogs(bot)
     print("Setup complete")
+
+
+@bot.event
+async def on_message(message):
+    if message.content.startswith(f'<@{bot.user.id}>') and not message.author.bot:
+        await message.channel.send("Hello! I am MagnaBot, coded solely by SpiritTheWalf. How can I help you today?")
+    else:
+        await bot.process_commands(message)
 
 
 bot.run(TOKEN)
