@@ -10,7 +10,8 @@ import traceback
 import aiohttp
 import inspect
 import asyncio
-import botsetup, logging_cog, sheri, moderation, owneronly, utility, gay, info, economy, grab, useful, tags, tickets
+import botsetup, logging_cog, sheri, moderation, owneronly, utility, info, economy, grab, useful, tags, tickets, berry, \
+    listeners
 # Import other Cogs here
 
 from discord.ext import commands
@@ -35,11 +36,10 @@ home = int(os.getenv("HOME_ID"))
 join_channel = 1242595310069481492
 
 
-
 # Load cogs function
 async def load_cogs(bot):
-    cogs = [botsetup, logging_cog, sheri, moderation, owneronly, utility, gay,
-            info, grab, economy, useful, tags, tickets]  # Add cogs to be added here, once imported
+    cogs = [botsetup, logging_cog, sheri, moderation, owneronly, utility, listeners,
+            info, grab, economy, useful, tags, tickets, berry]  # Add cogs to be added here, once imported
     for cog in cogs:
         if not bot.get_cog(cog.__name__):
             try:
@@ -136,7 +136,6 @@ def cleanup_code(content: str) -> str:
 
     # remove `foo`
     return content.strip('` \n')
-
 
 
 @bot.command(hidden=True, name='eval')
