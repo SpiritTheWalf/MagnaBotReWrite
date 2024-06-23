@@ -1,4 +1,8 @@
-﻿# MagnaBotReWrite
+# **PLEASE NOTE**
+This code is old and is no longer being maintained, a new version is on the way, msg SpiritTheWalf for more information
+ 
+ 
+ # MagnaBotReWrite
 
 For any support please reach out to SpiritTheWalf on Discord, or run the `/support` command
 
